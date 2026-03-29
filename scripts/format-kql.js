@@ -1,16 +1,55 @@
 import fs from "fs/promises";
 import path from "path";
 
+// Configuration: number of spaces per indent level
+const INDENT_SIZE = 2;
+
+// Format a single KQL query
 function formatKql(text) {
-  return text
-    .split("\n")
-    .map(line => line.trim())
-    .map(line => line.replace(/\s*\|\s*/g, "\n| "))
-    .join("\n")
-    .replace(/\n{2,}/g, "\n\n")
-    .trim() + "\n";
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const formattedLines = [];
+  let indentLevel = 0;
+
+  for (let line of lines) {
+    // Handle multi-line pipes: put | at start
+    if (line.startsWith("|")) {
+      formattedLines.push(" ".repeat(indentLevel * INDENT_SIZE) + line);
+      continue;
+    }
+
+    // Handle let statements
+    if (/^let\s+/i.test(line)) {
+      formattedLines.push(" ".repeat(indentLevel * INDENT_SIZE) + line);
+      continue;
+    }
+
+    // Handle closing brackets
+    if (/^\)/.test(line)) {
+      indentLevel = Math.max(indentLevel - 1, 0);
+      formattedLines.push(" ".repeat(indentLevel * INDENT_SIZE) + line);
+      continue;
+    }
+
+    // Handle opening brackets
+    if (/\($/.test(line)) {
+      formattedLines.push(" ".repeat(indentLevel * INDENT_SIZE) + line);
+      indentLevel += 1;
+      continue;
+    }
+
+    // Default: indent and keep pipes aligned
+    line = line.replace(/\s*\|\s*/g, "\n| ");
+    const pipeLines = line.split("\n");
+    pipeLines.forEach((pl, idx) => {
+      const spaces = " ".repeat(indentLevel * INDENT_SIZE);
+      formattedLines.push(idx === 0 ? spaces + pl : spaces + pl.trim());
+    });
+  }
+
+  return formattedLines.join("\n") + "\n";
 }
 
+// Recursively walk through the repo and format .kql files
 async function walk(dir) {
   const files = await fs.readdir(dir);
   for (const name of files) {
@@ -24,6 +63,7 @@ async function walk(dir) {
   }
 }
 
+// Format a single file and overwrite if changed
 async function formatFile(filePath) {
   const original = await fs.readFile(filePath, "utf8");
   const formatted = formatKql(original);
