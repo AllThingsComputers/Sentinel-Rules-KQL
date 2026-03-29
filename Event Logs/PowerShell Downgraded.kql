@@ -1,4 +1,4 @@
-// Title of Detection:   PowerShell Downgraded
+// Title of Detection: PowerShell Downgraded
 // Authorship & Contact: https://allthingscomputers.medium.com  https://twitter.com/allthingshandle  https://allthingscomputersblog.wordpress.com/ 
 // Description of the Detection: As a detection mechanism, the Windows PowerShell classic event log has event ID 400. This is the Engine Lifecycle event, and includes the Engine Version.  
 // References (if available): https://www.leeholmes.com/detecting-and-preventing-powershell-downgrade-attacks     https://adsecurity.org/?p=2921 
