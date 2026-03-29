@@ -1,0 +1,22 @@
+// Title of Detection: Log In Events Deleted
+// Authorship & Contact: https://allthingscomputers.medium.com, https://twitter.com/allthingshandle, https://allthingscomputersblog.wordpress.com/
+// Description: Detects potential tampering when logon events are deleted but logoff events are retained.
+// References: 
+
+let timePeriod = 1d;
+
+let logon = SecurityEvent
+| where TimeGenerated > ago(timePeriod)
+| where EventID == 4624 and LogonType == 2 and isnotempty(Account)
+| summarize LogOnCount = count() by Account;
+
+let logoff = SecurityEvent
+| where TimeGenerated > ago(timePeriod)
+| where EventID == 4634 and LogonType == 2 and isnotempty(Account)
+| summarize LogOffCount = count() by Account;
+
+logon
+| join kind=fullouter (logoff) on Account
+| extend LogOnCount = coalesce(LogOnCount, 0), LogOffCount = coalesce(LogOffCount, 0)
+| where LogOnCount == 0 and LogOffCount > 3
+| project Account, LogOnCount, LogOffCount;

@@ -1,0 +1,14 @@
+// Title of Detection: Modification of the Program Run by a Windows Default Scheduled Task for Possible Hidden Persistence
+// Authorship & Contact:
+//    https://allthingscomputers.medium.com
+//    https://twitter.com/allthingshandle
+//    https://allthingscomputersblog.wordpress.com
+// Description: Detects potential persistence methods by monitoring changes to executables or scripts associated with default Windows scheduled tasks.
+// References: https://blog.menasec.net/2019/03/threat-hunting-25-scheduled-tasks-for.html
+// Detection Logic:
+
+SysmonEvent
+| where EventID == 11 // File creation or modification events
+| where Image contains "cmd.exe" or Image contains "powershell.exe" // Execution of modification tools
+| where TargetFilename matches regex @"(?i)(aitagent\.exe|DiagTrackRunner\.exe|CompatTelRunner\.exe|acproxy\.dll|wsqmcons\.exe|Ipremove\.exe|srrstr\.dll|wermgr\.exe|sdclt\.exe|appidcertstorecheck\.exe|AppHostRegistrationVerifier\.exe|MicTray64\.exe|usoclient\.exe|dsregcmd\.exe|sihclient\.exe|dimsjob\.dll|filemodLracengn\.dll|HotstartUserAgent\.dll|MsCtfMonitor\.dll|PlaySndSrv\.dll|AdobeARM\.exe|GoogleUpdate\.exe)" 
+| extend AdditionalDetails = pack("ModifiedFile", TargetFilename, "ExecutingProcess", Image, "CommandLine", CommandLine, "User", User)

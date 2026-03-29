@@ -1,0 +1,32 @@
+// Title of Detection: Base64 Encoding with Frequently Paired Switches Detected
+// Authorship & Contact: https://allthingscomputers.medium.com  https://twitter.com/allthingshandle  https://allthingscomputersblog.wordpress.com/
+// Description of the Detection:
+// References: 
+// - https://unit42.paloaltonetworks.com/unit42-pulling-back-the-curtains-on-encodedcommand-powershell-attacks/
+// - https://redcanary.com/threat-detection-report/techniques/powershell/
+
+Sysmon
+| where Image contains "powershell"
+| extend EncodedCommands = iff(CommandLine contains "-enc" or CommandLine contains "-encodedcommand" or CommandLine contains "-ec" or CommandLine contains "-en" or CommandLine contains "-e" or CommandLine contains "-enco", "Detected", "")
+| extend WindowStyleHidden = iff(CommandLine contains "-window hidden" or CommandLine contains "-W Hidden" or CommandLine contains "-windowstyle hidden", "Detected", "")
+| extend Noninteractive = iff(CommandLine contains "-noni" or CommandLine contains "-noninteractive", "Detected", "")
+| extend NoProfile = iff(CommandLine contains "-nop" or CommandLine contains "-noprofile", "Detected", "")
+| extend ExecutionPolicyByPass = iff(CommandLine contains "-ep bypass" or CommandLine contains "-exec bypass" or CommandLine contains "-executionpolicy bypass", "Detected", "")
+| extend Sta = iff(CommandLine contains "-sta", "Detected", "")
+| extend NoExit = iff(CommandLine contains "-noexit", "Detected", "")
+| extend ExecutionPolicyHidden = iff(CommandLine contains "-ep hidden", "Detected", "")
+| extend Base64 = iff(CommandLine contains "base64", "Detected", "")
+| extend CombinationRedFlags = iff(CommandLine matches regex @"(?i)-nop.*-noni.*-enc|.*-win.*hidden.*-enc|.*-exec.*bypass.*-enc", "Detected", "")
+| extend CountOutOf10 = 
+    iif(isnotempty(EncodedCommands), 1, 0) +
+    iif(isnotempty(WindowStyleHidden), 1, 0) +
+    iif(isnotempty(Noninteractive), 1, 0) +
+    iif(isnotempty(NoProfile), 1, 0) +
+    iif(isnotempty(ExecutionPolicyByPass), 1, 0) +
+    iif(isnotempty(Sta), 1, 0) +
+    iif(isnotempty(NoExit), 1, 0) +
+    iif(isnotempty(ExecutionPolicyHidden), 1, 0) +
+    iif(isnotempty(Base64), 1, 0) +
+    iif(isnotempty(CombinationRedFlags), 1, 0)
+| where isnotempty(EncodedCommands) or isnotempty(CombinationRedFlags) or isnotempty(Base64) or CountOutOf10 >= 5
+| project TimeGenerated, Computer, UserName, CommandLine, EncodedCommands, WindowStyleHidden, Noninteractive, NoProfile, ExecutionPolicyByPass, Sta, NoExit, ExecutionPolicyHidden, Base64, CombinationRedFlags, CountOutOf10

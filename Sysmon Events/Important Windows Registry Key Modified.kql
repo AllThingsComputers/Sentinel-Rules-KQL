@@ -1,0 +1,33 @@
+// Title of Detection: Important Windows Registry Key Modified
+// Authorship & Contact: 
+//    https://allthingscomputers.medium.com  
+//    https://twitter.com/allthingshandle  
+//    https://allthingscomputersblog.wordpress.com/  
+// Description of the Detection: 
+//    Detects changes (modifications or deletions) to critical Windows Registry keys or key values. 
+//    Events include Sysmon EventID 13 (SetValue) and 14 (DeleteValue).
+// References: 
+//    https://attack.mitre.org/datasources/DS0024/  
+//    https://attack.mitre.org/techniques/T1546/012/  
+//       https://attack.mitre.org/datasources/DS0024/   https://attack.mitre.org/techniques/T1546/012/   https://attack.mitre.org/techniques/T1546/015/   https://attack.mitre.org/techniques/T1564/002/   https://attack.mitre.org/techniques/T1574/011/   https://attack.mitre.org/techniques/T1562/001/   https://attack.mitre.org/techniques/T1137/002/   https://attack.mitre.org/techniques/T1562/004/   https://attack.mitre.org/techniques/T1553/   https://attack.mitre.org/techniques/T1562/006/ 
+https://attack.mitre.org/techniques/T1553/006/    https://attack.mitre.org/techniques/T1505/005/   https://attack.mitre.org/techniques/T1547/003/   https://attack.mitre.org/techniques/T1547/012/   https://attack.mitre.org/techniques/T1546/007/   https://attack.mitre.org/techniques/T1546/009/   https://attack.mitre.org/techniques/T1546/001/   https://attack.mitre.org/techniques/T1547/014/   https://attack.mitre.org/techniques/T1547/002/    https://attack.mitre.org/techniques/T1546/002/   https://attack.mitre.org/techniques/T1553/003/   https://attack.mitre.org/techniques/T1547/005/   https://attack.mitre.org/techniques/T1547/010/   https://attack.mitre.org/techniques/T1218/002 
+
+// Detection Logic:
+SysmonEvent
+| where EventID in (13, 14) and EventType in ("SetValue", "DeleteValue")
+| where TargetObject matches regex @'(?i)(
+    \\SOFTWARE\\Microsoft\\AMSI\\Providers|
+    HKCU\\Software\\Classes\\mscfile\\shell\\open\\command|
+    HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\control.exe|
+    HKCU\\Software\\Classes\\exefile\\shell\\runas\\command\\isolatedCommand|
+    HKLM\\Software\\Policies\\Microsoft\\Windows NT\\DNSClient\\EnableMulticast|
+    HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\LSASS.exe|
+    HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors|
+    HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\\Path|
+    HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList|
+    HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender|
+    HKLM\\SOFTWARE\\Microsoft\\Cryptography\\OID|
+    HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Control Panel\\NameSpace|
+    HKCU\\Control Panel\\Desktop\\
+)'
+| extend AdditionalDetails = pack("ProcessName", ProcessName, "UserName", UserName, "ParentImage", ParentImage)

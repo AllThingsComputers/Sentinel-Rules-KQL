@@ -1,0 +1,8 @@
+// Title of Detection: Open Command for UAC Bypass
+// Authorship & Contact: https://allthingscomputers.medium.com | https://twitter.com/allthingshandle | https://allthingscomputersblog.wordpress.com/
+// Description of the Detection: Detects modifications to the default value of the registry key `HKEY_CLASSES_ROOT\mscfile\shell\open\command`, which could result in executing a script or binary for UAC bypass. This technique leverages living-off-the-land methods in Microsoft Windows.
+// References (if available): https://pentestlab.blog/2017/05/02/uac-bypass-event-viewer/ | Page 39
+
+SysmonEvent
+| where EventID in (12, 13, 14) // Registry object modification, registry key/value create or delete
+| where TargetObject matches regex @"(?i)\\HKEY_CLASSES_ROOT\\mscfile\\shell\\open\\command"

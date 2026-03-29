@@ -1,0 +1,24 @@
+let time_until = 1d; // Adjust as needed for your time window
+let SentinelWatchlistOfEveryEIDEver = GetWatchlist('AllSeenEventIDsFromSysmon')
+    | project EventID = toint(SearchKey); // Convert SearchKey to integer if necessary
+let rarewatchlist = GetWatchlist('WatchlistOfRareSysmonEventIDs')
+    | project EventID = toint(SearchKey); // Convert SearchKey to integer if necessary
+let EveryEventIDSinceWatchlistCreation = Sysmon
+    | where TimeGenerated between (datetime(2022-07-19T20:00:00)..ago(time_until))
+    | summarize by EventID;
+let RecentRareEventIDs = Sysmon
+    | where TimeGenerated between (ago(90d)..ago(time_until))
+    | summarize count() by EventID
+    | where count <= 1; // Adjust this threshold for sensitivity
+Sysmon
+| where TimeGenerated >= ago(1h)
+| extend NewEvent = iff(EventID !in (SentinelWatchlistOfEveryEIDEver) 
+                        and EventID !in (EveryEventIDSinceWatchlistCreation), 
+                        "EID is New", 
+                        "EID is Not New")
+| extend RareEvent = iff(EventID in (rarewatchlist) 
+                         or EventID in (RecentRareEventIDs), 
+                         "EID is Rare", 
+                         "EID is Not Rare")
+| where NewEvent == "EID is New" or RareEvent == "EID is Rare"
+| project-reorder NewEvent, RareEvent, EventID, TimeGenerated

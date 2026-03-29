@@ -1,0 +1,9 @@
+// Title of Detection: Special Characters in Registry Key
+// Authorship & Contact: https://allthingscomputers.medium.com  https://twitter.com/allthingshandle  https://allthingscomputersblog.wordpress.com/
+// Description of the Detection: This will spot special characters in the registry for persistence. The `!` character ensures it runs until it succeeds, and `*` allows it to run in safe mode.
+// References: https://labs.jumpsec.com/running-once-running-twice-pwned-windows-registry-run-keys/
+
+SysmonEvent
+| where EventID in (12, 13)
+| extend name = extract(@"[^\\]*$", 0, tostring(TargetObject))
+| where name matches regex @"^(!|\*)"

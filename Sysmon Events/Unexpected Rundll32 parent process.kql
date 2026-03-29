@@ -1,0 +1,21 @@
+// Title of Detection: Unexpected Rundll32 Parent Process
+// Authorship & Contact:
+// - Blog: https://allthingscomputers.medium.com
+// - Twitter: https://twitter.com/allthingshandle
+// - Wordpress: https://allthingscomputersblog.wordpress.com
+//
+// Description of the Detection:
+// This query identifies executions of Rundll32.exe where the parent process is unusual or potentially untrusted. 
+// Adjust the list of parent processes based on your organization's normal baseline for better accuracy.
+//
+// References:
+// - Page 25: https://resource.redcanary.com/rs/003-YRU-314/images/2021-Threat-Detection-Report.pdf
+//
+// The Logic of the Detection or Query Begins Below:
+
+SysmonEvent
+| where EventID == 1
+    and Image contains @"\rundll32.exe"
+    and ParentImage matches regex @"(?i)(winword|outlook|excel|msaccess|isass|taskeng|winlogon|schtask|wmiprvse|wsmprovhost|onenote|powerpnt|visio)\.exe"
+| project TimeGenerated, Computer, User, Image, CommandLine, ParentImage, ParentCommandLine
+| order by TimeGenerated desc

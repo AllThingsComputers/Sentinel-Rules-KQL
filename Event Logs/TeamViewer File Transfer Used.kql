@@ -1,0 +1,10 @@
+// Title of Detection:  TeamViewer File Transfer Used
+// Authorship & Contact: https://allthingscomputers.medium.com  https://twitter.com/allthingshandle  https://allthingscomputersblog.wordpress.com/ 
+// Description of the Detection: 
+// References (if available): 
+// The Logic of the Detection or Query Begins Below This Line
+Event
+| where EventID == 11 // File created event
+| where EventData contains "teamviewer"
+| where Image matches regex @"(?i)(teamviewer|tv)[^\\]*\.exe$"
+| where not(TargetFilename matches regex @"(?i)(teamviewer|tv)")

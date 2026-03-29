@@ -1,0 +1,15 @@
+// Title of Detection: Hyper-V VM Detected - Look Forwards
+// Authorship & Contact: 
+//    https://allthingscomputers.medium.com  
+//    https://twitter.com/allthingshandle  
+//    https://allthingscomputersblog.wordpress.com/  
+// Description of the Detection: 
+//    Detects adversaries potentially enabling and using Hyper-V to perform malicious operations in a virtual environment, 
+//    which can be leveraged to evade detection.
+// References: 
+//    https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/quick-start/enable-hyper-v  
+
+// Detection Logic:
+SysmonEvent
+| where EventID == 1
+  and CommandLine matches regex @"(?i)dism(\.exe)? (?=.*\/online)(?=.*\/enable-feature)(?=.*\/all)(?=.*\/featurename:Microsoft-Hyper-V)"

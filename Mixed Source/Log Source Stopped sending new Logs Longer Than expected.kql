@@ -1,0 +1,28 @@
+// Title of Detection: Log Source Stopped sending new Logs Longer Than expected
+// Authorship & Contact: https://allthingscomputers.medium.com  https://twitter.com/allthingshandle  https://allthingscomputersblog.wordpress.com/ 
+// Description of the Detection: Please add your own logs using this format
+// References (if available): 
+// The Logic of the Detection or Query Begins Below This Line
+(union isfuzzy=true
+    (SecurityIncident
+        | summarize arg_max(TimeGenerated, *)),
+    (LAQueryLogs
+        | summarize arg_max(TimeGenerated, *)),
+    (AzureDiagnostics
+        | summarize arg_max(TimeGenerated, *)),
+    (ThreatIntelligenceIndicator
+        | summarize arg_max(TimeGenerated, *))
+)
+| extend Table = strcat(Type_string, Source)
+| extend RecievingLogsInLastHour = iff(TimeGenerated >= ago(1h), "Yes", "No")
+| extend TimeSinceLastLog = ago(0s) - TimeGenerated
+| extend ExpectedLulls1 = iff(Table == "LAQueryLogs", 24h, 0h)
+| extend ExpectedLulls2 = iff(Table == "AzureDiagnostics", 12h, 0h)
+| extend ExpectedLulls3 = iff(Table == "ThreatIntelligenceIndicator", 12h, 0h)
+| extend ExpectedLulls4 = iff(Table == "OfficeActivity", 12h, 0h)
+| extend ExpectedLulls = ExpectedLulls1 + ExpectedLulls2 + ExpectedLulls3 + ExpectedLulls4
+| project Time_Of_Last_Log = TimeGenerated, Table, TimeSinceLastLog, ExpectedLulls
+| where isnotempty(Table)
+| extend LongerThanUsual = iff(TimeSinceLastLog > ExpectedLulls, "Table Not Received Logs Longer Than Expected", "Nothing Irregular")
+| where LongerThanUsual != "Nothing Irregular"
+| project-reorder Time_Of_Last_Log, Table, TimeSinceLastLog, LongerThanUsual

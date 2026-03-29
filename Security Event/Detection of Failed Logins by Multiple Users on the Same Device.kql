@@ -1,0 +1,22 @@
+// Title of Detection: Detection of Failed Logins by Multiple Users on the Same Device
+// Description: Potential compromised device. Could also be built in sign-in logs for browser logins
+
+let FailedLaptopLogon = (
+    SecurityEvent
+    | where Activity == "4771 - Kerberos pre-authentication failed." // 4771 will catch users failing to log into devices etc
+    | summarize DistinctFailedUserAccountLogonsPerIP = dcount(TargetAccount) by IpAddress
+    | where DistinctFailedUserAccountLogonsPerIP >= 3 // Sensitivity threshold
+);
+
+let FailedMachineLogon = (
+    SecurityEvent
+    | where EventID == 4625 and LogonType in (2, 10) // 2 = Local Interactive, 10 = Remote Interactive (RDP)
+    | summarize DistinctFailedUserAccountLogonsPerDevice = dcount(Account) by WorkstationName
+    | where DistinctFailedUserAccountLogonsPerDevice >= 3  // Sensitivity threshold
+);
+
+FailedLaptopLogon
+| union FailedMachineLogon
+| extend IPorWorkstationName = coalesce(IpAddress, WorkstationName) // Combine IP and workstation name
+| extend UniqueFailedUserAccountLogons = DistinctFailedUserAccountLogonsPerIP + DistinctFailedUserAccountLogonsPerDevice // Summing the counts of failed logons
+| project TimeGenerated, IPorWorkstationName, UniqueFailedUserAccountLogons
