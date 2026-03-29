@@ -11,31 +11,29 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Normalize KQL files
-        shell: bash
-        run: |
-          find . -name "*.kql" -exec sed -i 's/\r$//' {} \;
-          find . -name "*.kql" -exec sed -i 's/[[:space:]]\+$//' {} \;
-
-      - name: Install Kusto PowerShell modules
+      - name: Install Kusto Language
         shell: pwsh
         run: Install-Module -Name Az.Kusto -Force -Scope CurrentUser
 
-      - name: Parse KQL files
+      - name: Check all KQL files
         shell: pwsh
         run: |
           $failed = $false
           $files = Get-ChildItem -Recurse -Filter *.kql
           foreach ($f in $files) {
-            Write-Host "Checking $($f.FullName)..."
-            $content = Get-Content $f.FullName -Raw
-            try {
-              Add-Type -AssemblyName "Microsoft.Azure.Kusto.Language"
-              [Microsoft.Azure.Kusto.Language.KustoCode]::Parse($content) | Out-Null
-            }
-            catch {
-              Write-Host "❌ Syntax error in $($f.FullName)"
-              $failed = $true
-            }
+              Write-Host "Checking $($f.FullName)..."
+              $content = Get-Content $f.FullName -Raw
+              try {
+                  Add-Type -AssemblyName "Microsoft.Azure.Kusto.Language"
+                  [Microsoft.Azure.Kusto.Language.KustoCode]::Parse($content) | Out-Null
+              } catch {
+                  Write-Host "❌ Syntax error in $($f.FullName)"
+                  $failed = $true
+              }
           }
-          if ($failed) { exit 1 } else { Write-Host "✅ All KQL files passed." }
+          if ($failed) {
+              Write-Host "❌ One or more KQL files have syntax errors."
+              exit 1
+          } else {
+              Write-Host "✅ All KQL files passed."
+          }
