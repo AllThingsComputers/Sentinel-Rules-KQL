@@ -2,10 +2,6 @@ import fs from "fs/promises";
 import path from "path";
 
 function formatKql(text) {
-  // Basic formatting:
-  // - Trim spaces
-  // - Put pipes at start of line
-  // - Remove extra empty lines
   return text
     .split("\n")
     .map(line => line.trim())
