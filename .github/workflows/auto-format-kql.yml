@@ -18,9 +18,6 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Install Dependencies
-        run: npm install
-
       - name: Run KQL Formatter
         run: node scripts/format-kql.js
 
