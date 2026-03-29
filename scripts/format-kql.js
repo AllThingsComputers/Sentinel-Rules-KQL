@@ -1,5 +1,5 @@
-import fs from "fs/promises";
-import path from "path";
+const fs = require("fs").promises;
+const path = require("path");
 
 // Configuration: number of spaces per indent level
 const INDENT_SIZE = 2;
