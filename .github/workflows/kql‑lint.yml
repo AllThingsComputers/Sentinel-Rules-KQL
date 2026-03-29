@@ -15,7 +15,7 @@ jobs:
         shell: pwsh
         run: Install-Module -Name Az.Kusto -Force -Scope CurrentUser
 
-      - name: Check all KQL files
+      - name: Parse all KQL files and show errors
         shell: pwsh
         run: |
           $failed = $false
@@ -28,9 +28,11 @@ jobs:
                   [Microsoft.Azure.Kusto.Language.KustoCode]::Parse($content) | Out-Null
               } catch {
                   Write-Host "❌ Syntax error in $($f.FullName)"
+                  Write-Host $_.Exception.Message
                   $failed = $true
               }
           }
+
           if ($failed) {
               Write-Host "❌ One or more KQL files have syntax errors."
               exit 1
