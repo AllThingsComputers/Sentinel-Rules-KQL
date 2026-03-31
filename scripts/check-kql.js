@@ -5,7 +5,7 @@ let errorCount = 0;
 
 // --- Report error as GitHub Actions annotation ---
 function report(file, line, message) {
-  // Make file path relative to repo root and use forward slashes
+  // Convert to repo-relative path for clickable links
   const relativePath = path.relative(process.cwd(), file).replace(/\\/g, "/");
   console.log(`::error file=${relativePath},line=${line}::${message}`);
   errorCount++;
@@ -35,12 +35,12 @@ async function walk(dir) {
 
       lines.forEach((line, i) => {
         const lineNum = i + 1;
+        const trimmed = line.trim();
 
         // --- QUOTE CHECK ---
         for (let j = 0; j < line.length; j++) {
           const char = line[j];
           const prev = line[j - 1];
-
           if ((char === '"' || char === "'") && prev !== "\\") {
             if (quoteOpen === char) {
               quoteOpen = null;
@@ -54,7 +54,6 @@ async function walk(dir) {
         for (let j = 0; j < line.length; j++) {
           const char = line[j];
           const prev = line[j - 1];
-
           if (!quoteOpen) {
             if (char === "(" && prev !== "\\") bracketCount++;
             if (char === ")" && prev !== "\\") bracketCount--;
@@ -67,20 +66,25 @@ async function walk(dir) {
         }
 
         // --- PIPE AT END ---
-        if (line.trim().endsWith("|")) {
+        if (trimmed.endsWith("|")) {
           report(fullPath, lineNum, "Pipe at end of line");
         }
 
-        // --- SUSPICIOUS PIPE USAGE ---
-        if (
-          line.trim().startsWith("|") &&
-          !line.match(/^\|\s*(where|extend|project|summarize|join|order|take|limit)/i)
-        ) {
-          report(fullPath, lineNum, "Suspicious pipe usage");
+        // --- SUSPICIOUS PIPE USAGE (improved) ---
+        // Only flag if pipe line doesn't start with valid KQL operators
+        if (trimmed.startsWith("|")) {
+          const validKeywords = [
+            "where", "extend", "project", "summarize",
+            "join", "order", "take", "limit", "project-away", "project-rename"
+          ];
+          const matches = validKeywords.some(k => trimmed.match(new RegExp(`^\\|\\s*${k}`, "i")));
+          if (!matches) {
+            report(fullPath, lineNum, "Suspicious pipe usage");
+          }
         }
 
-        // --- MULTILINE REGEX BREAK ---
-        if (line.includes("regex") && line.trim().endsWith("|")) {
+        // --- MULTILINE REGEX CHECK ---
+        if (line.includes("regex") && line.endsWith("|")) {
           report(fullPath, lineNum, "Regex likely broken across lines");
         }
       });
