@@ -2,8 +2,9 @@ name: KQL Format & Check
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
+    branches:
+      - main
+  workflow_dispatch:   # <-- this enables manual run
 
 jobs:
   kql:
