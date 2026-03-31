@@ -6,4 +6,4 @@
 SysmonEvent
 | where isnotempty(Image) and isnotempty(OriginalFileName) // Ensure relevant fields are populated
 | where OriginalFileName in~ ("winlogon.exe", "svchost.exe", "explorer.exe", "lsass.exe", "cmd.exe", "powershell.exe") // Specify expected Windows programs
-| where Image !startswith @"C:\Windows\System32\" // Detect if the program is not running from the expected folder
+| where Image !startswith @"C:\\Windows\\System32\\" // Detect if the program is not running from the expected folder
