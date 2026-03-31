@@ -4,4 +4,4 @@
 // References (if available):  https://redcanary.com/blog/verclsid-exe-threat-detection/ 
 // The Logic of the Detection or Query Begins Below This Line
 SysmonEvent
-| where EventID == 1 and ParentImage matches regex @"(?i)((EXCEL|WINWORD|AdobeARM|AcroRd32|Acrobat|outlook|Teams.exe|POWERPNT)\.exe|root\\Office16\\)" and Image matches regex @"(?i)(VBScript|WScript|Verclsid|cmd|Powershell|pwsh)\.exe$
+| where EventID == 1 and ParentImage matches regex @"(?i)((EXCEL|WINWORD|AdobeARM|AcroRd32|Acrobat|outlook|Teams.exe|POWERPNT)\.exe|root\\Office16\\)" and Image matches regex @"(?i)(VBScript|WScript|Verclsid|cmd|Powershell|pwsh)\.exe$"
