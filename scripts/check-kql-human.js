@@ -9,8 +9,8 @@
  * Produces human-readable output for GitHub Actions or local runs.
  */
 
-import fs from "fs/promises";
-import path from "path";
+const fs = require("fs").promises;
+const path = require("path");
 
 const KQL_DIR = "."; // root of repo
 
