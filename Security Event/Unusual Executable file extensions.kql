@@ -4,4 +4,4 @@
 // References (if available): 
 // The Logic of the Detection or Query Begins Below This Line
 SecurityEvent
-| where EventID in (4697, 7045) and not(ServiceFileName matches regex @'(?i)\.(exe|sys)'
+| where EventID in (4697, 7045) and not(ServiceFileName matches regex @'(?i)\.(exe|sys)')
