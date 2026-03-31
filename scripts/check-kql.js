@@ -5,7 +5,6 @@ let errorCount = 0;
 
 // --- Report error as GitHub Actions annotation ---
 function report(file, line, message) {
-  // Convert to repo-relative path for clickable links
   const relativePath = path.relative(process.cwd(), file).replace(/\\/g, "/");
   console.log(`::error file=${relativePath},line=${line}::${message}`);
   errorCount++;
@@ -50,14 +49,13 @@ async function walk(dir) {
           }
         }
 
-        // --- BRACKET CHECK ---
+        // --- BRACKET CHECK (ignores escaped) ---
         for (let j = 0; j < line.length; j++) {
           const char = line[j];
           const prev = line[j - 1];
-          if (!quoteOpen) {
-            if (char === "(" && prev !== "\\") bracketCount++;
-            if (char === ")" && prev !== "\\") bracketCount--;
-          }
+          if (prev === "\\") continue; // ignore escaped
+          if (char === "(") bracketCount++;
+          if (char === ")") bracketCount--;
         }
 
         // --- DOUBLE PIPE ---
@@ -70,8 +68,7 @@ async function walk(dir) {
           report(fullPath, lineNum, "Pipe at end of line");
         }
 
-        // --- SUSPICIOUS PIPE USAGE (improved) ---
-        // Only flag if pipe line doesn't start with valid KQL operators
+        // --- SUSPICIOUS PIPE USAGE ---
         if (trimmed.startsWith("|")) {
           const validKeywords = [
             "where", "extend", "project", "summarize",
@@ -91,7 +88,7 @@ async function walk(dir) {
 
       // --- FILE-WIDE CHECKS ---
       if (bracketCount !== 0) {
-        report(fullPath, 1, "Unbalanced brackets");
+        report(fullPath, 1, `Unbalanced brackets: ${bracketCount > 0 ? "+" + bracketCount : bracketCount}`);
       }
 
       if (quoteOpen) {
