@@ -3,11 +3,15 @@ const path = require("path");
 
 let errorCount = 0;
 
+// --- Report error as GitHub Actions annotation ---
 function report(file, line, message) {
-  console.log(`::error file=${file},line=${line}::${message}`);
+  // Make file path relative to repo root and use forward slashes
+  const relativePath = path.relative(process.cwd(), file).replace(/\\/g, "/");
+  console.log(`::error file=${relativePath},line=${line}::${message}`);
   errorCount++;
 }
 
+// --- Walk folder recursively and check each .kql file ---
 async function walk(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
 
@@ -32,7 +36,7 @@ async function walk(dir) {
       lines.forEach((line, i) => {
         const lineNum = i + 1;
 
-        // --- QUOTES ---
+        // --- QUOTE CHECK ---
         for (let j = 0; j < line.length; j++) {
           const char = line[j];
           const prev = line[j - 1];
@@ -46,7 +50,7 @@ async function walk(dir) {
           }
         }
 
-        // --- BRACKETS ---
+        // --- BRACKET CHECK ---
         for (let j = 0; j < line.length; j++) {
           const char = line[j];
           const prev = line[j - 1];
@@ -67,7 +71,7 @@ async function walk(dir) {
           report(fullPath, lineNum, "Pipe at end of line");
         }
 
-        // --- BAD START (common mistake) ---
+        // --- SUSPICIOUS PIPE USAGE ---
         if (
           line.trim().startsWith("|") &&
           !line.match(/^\|\s*(where|extend|project|summarize|join|order|take|limit)/i)
@@ -75,15 +79,13 @@ async function walk(dir) {
           report(fullPath, lineNum, "Suspicious pipe usage");
         }
 
-        // --- MULTILINE REGEX BREAK (your issue) ---
-        if (
-          line.includes("regex") &&
-          line.trim().endsWith("|")
-        ) {
+        // --- MULTILINE REGEX BREAK ---
+        if (line.includes("regex") && line.trim().endsWith("|")) {
           report(fullPath, lineNum, "Regex likely broken across lines");
         }
       });
 
+      // --- FILE-WIDE CHECKS ---
       if (bracketCount !== 0) {
         report(fullPath, 1, "Unbalanced brackets");
       }
@@ -92,7 +94,6 @@ async function walk(dir) {
         report(fullPath, 1, "Unclosed quote detected");
       }
 
-      // --- MISSING PIPE ---
       if (!content.includes("|")) {
         report(fullPath, 1, "No pipe operator found");
       }
@@ -100,6 +101,7 @@ async function walk(dir) {
   }
 }
 
+// --- Run ---
 (async () => {
   await walk(process.cwd());
 
