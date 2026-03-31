@@ -9,4 +9,4 @@ Sysmon
 | where TheCommand matches regex @"[\*\\]"
 | extend extractedCommandLine = extract_all(@'([\*\\]{1})', tostring(TheCommand))
 | extend extractedContextCommandLine5characters = extract_all(@'((?i).{5}[\*\\].{5}){1}', tostring(TheCommand)}
-| extend extractedContextCommandLine15characters = extract_all(@'((?i); {15}[\*\\].{15}}{1}', tostring(TheCommand)) // Please whitelist of context safe code seen before
+| extend extractedContextCommandLine15characters = extract_all(@'((?i); {15}[\*\\].{15}{1}', tostring(TheCommand)) // Please whitelist of context safe code seen before
