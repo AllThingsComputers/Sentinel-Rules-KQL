@@ -4,4 +4,4 @@
 // References (if available): https://www.cyborgsecurity.com/cyborg-labs/living-off-the-land-lotl-rdp-hijacking/ 
 // The Logic of the Detection or Query Begins Below This Line
 SecurityEvent
-| where EventID == 4688 and * contains "tscon" and * contains "dest" and (* contains "rdp-tcp" or * contains "console")) or (EventID==7045 and * contains "tscon" and * contains "dest" and (* contains "rdp-tcp" or * contains "console"))
+| where EventID == 4688 and * contains "tscon" and * contains "dest" and (* contains "rdp-tcp" or * contains "console") or (EventID==7045 and * contains "tscon" and * contains "dest" and (* contains "rdp-tcp" or * contains "console"))
