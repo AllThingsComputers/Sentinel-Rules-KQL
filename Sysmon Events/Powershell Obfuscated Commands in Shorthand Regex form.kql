@@ -5,4 +5,4 @@
 // The Logic of the Detection or Query Begins Below This Line
 SysmonEvent
 | where EventID == 1
-| where CommandLine matches regex '(?i)-(e[ncoded]{0,6}[command]{0,7}\s|NonI(nteractive){0,10)|W[indowStyle]{0,10} Hidden|NoP(rofile){0,6}|E[xecution]{0,8}[Policy]{0,6} Bypass)'
+| where CommandLine matches regex '(?i)-(e[ncoded]{0,6}[command]{0,7}\s|NonI(nteractive){0,10}|W[indowStyle]{0,10} Hidden|NoP(rofile){0,6}|E[xecution]{0,8}[Policy]{0,6} Bypass)'
