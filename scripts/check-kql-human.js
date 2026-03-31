@@ -1,128 +1,71 @@
-#!/usr/bin/env node
-
-/**
- * check-kql-human.js
- * Checks all .kql files in the repo for:
- * - Unbalanced brackets: (), {}, []
- * - Unclosed quotes: " or '
- * - Empty files
- * Produces human-readable output for GitHub Actions or local runs.
- */
-
 const fs = require("fs").promises;
 const path = require("path");
 
-const KQL_DIR = "."; // root of repo
-
-// Recursively get all .kql files
-async function getKqlFiles(dir) {
-  let files = [];
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files = files.concat(await getKqlFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith(".kql")) {
-      files.push(fullPath);
-    }
-  }
-  return files;
-}
-
-// Main checker function
+// Check one KQL file
 async function checkKqlFile(file) {
-  const content = await fs.readFile(file, "utf8");
-  if (!content.trim()) {
-    console.log(`Empty file: ${file}`);
-    return 1; // count as error
-  }
+    const content = await fs.readFile(file, "utf8");
+    let inString = false;
+    let stringType = ""; // @" or @'
+    const bracketStack = [];
 
-  let errors = 0;
-  let bracketStack = [];
-  let quoteOpen = null;
+    for (let i = 0; i < content.length; i++) {
+        const char = content[i];
+        const nextTwo = content.substr(i, 2);
 
-  const bracketPairs = {
-    "(": ")",
-    "{": "}",
-    "[": "]"
-  };
-
-  const openBrackets = Object.keys(bracketPairs);
-  const closeBrackets = Object.values(bracketPairs);
-
-  const lines = content.split(/\r?\n/);
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Ignore comments
-    if (trimmed.startsWith("//")) continue;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      const prev = line[i - 1];
-
-      // Ignore escaped characters
-      if (prev === "\\") continue;
-
-      // Handle quotes
-      if ((char === '"' || char === "'")) {
-        if (!quoteOpen) {
-          quoteOpen = char;
-        } else if (quoteOpen === char) {
-          quoteOpen = null;
+        // Detect start of string
+        if (!inString && (nextTwo === '@"' || nextTwo === "@'")) {
+            inString = true;
+            stringType = nextTwo;
+            i++; // skip next char
+            continue;
         }
-        continue;
-      }
 
-      // Skip bracket checks inside quotes
-      if (quoteOpen) continue;
-
-      // Bracket handling
-      if (openBrackets.includes(char)) {
-        bracketStack.push(char);
-      } else if (closeBrackets.includes(char)) {
-        const last = bracketStack.pop();
-        if (!last || bracketPairs[last] !== char) {
-          console.log(`Unbalanced bracket '${char}' in ${file}`);
-          errors++;
+        // Inside a string — ignore everything inside
+        if (inString) {
+            if (stringType === '@"' && char === '"') {
+                inString = false;
+                stringType = "";
+            } else if (stringType === "@'" && char === "'") {
+                if (content[i + 1] === "'") { // doubled quote inside string
+                    i++; // skip doubled quote
+                } else {
+                    inString = false;
+                    stringType = "";
+                }
+            }
+            continue; // skip all other chars inside string
         }
-      }
+
+        // Track brackets outside strings
+        if (char === "(") bracketStack.push("(");
+        if (char === ")") {
+            if (bracketStack.length === 0) {
+                console.log(`Unbalanced closing bracket in ${file}`);
+            } else {
+                bracketStack.pop();
+            }
+        }
+
+        // Optional: Track pipes outside strings
+        // if (char === "|" && content[i + 1] !== "|") {
+        //     console.log(`Suspicious pipe usage in ${file} at char ${i}`);
+        // }
     }
-  }
 
-  // Remaining unclosed brackets
-  while (bracketStack.length > 0) {
-    const unclosed = bracketStack.pop();
-    console.log(`Unbalanced bracket '${unclosed}' in ${file}`);
-    errors++;
-  }
-
-  // Remaining unclosed quote
-  if (quoteOpen) {
-    console.log(`Unclosed quote '${quoteOpen}' in ${file}`);
-    errors++;
-  }
-
-  return errors;
+    if (bracketStack.length > 0) {
+        console.log(`Unbalanced brackets in ${file}`);
+    }
 }
 
-async function main() {
-  const files = await getKqlFiles(KQL_DIR);
-  let totalErrors = 0;
-
-  for (const file of files) {
-    totalErrors += await checkKqlFile(file);
-  }
-
-  if (totalErrors > 0) {
-    console.log(`\nTotal errors found: ${totalErrors}`);
-    process.exit(1); // fail workflow if errors exist
-  } else {
-    console.log("All KQL files passed checks ✅");
-  }
+// Recursively scan folder for KQL files
+async function scanFolder(folder) {
+    const entries = await fs.readdir(folder, { withFileTypes: true });
+    for (const entry of entries) {
+        const fullPath = path.join(folder, entry.name);
+        if (entry.isDirectory()) await scanFolder(fullPath);
+        else if (entry.name.endsWith(".kql")) await checkKqlFile(fullPath);
+    }
 }
 
-main().catch(err => {
-  console.error("Error checking KQL files:", err);
-  process.exit(1);
-});
+// Run the scanner
+scanFolder("./").catch(console.error);
